@@ -2,6 +2,7 @@ package com.animee.todayhistory;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -10,29 +11,21 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.animee.todayhistory.bean.HistoryDescBean;
-import com.animee.todayhistory.network.OkpClient;
-import com.animee.todayhistory.ui.base.BaseActivity;
-import com.animee.todayhistory.ui.base.ContentURL;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.animee.todayhistory.ui.HistoryActivity;
 import com.animee.todayhistory.ui.HistoryAdapter;
 import com.animee.todayhistory.ui.HistoryDescActivity;
 import com.animee.todayhistory.bean.HistoryBean;
 import com.animee.todayhistory.bean.LaoHuangliBean;
-import com.google.gson.Gson;
+import com.animee.todayhistory.bean.LaoHuangliHoursBean;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import okhttp3.Call;
-import okhttp3.Request;
-import okhttp3.Response;
-
-public class MainActivity extends BaseActivity implements View.OnClickListener, MainContract.MainView{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, MainContract.MainView{
 
     private ListView mainLv;
     private ImageButton imgBtn;
@@ -62,29 +55,32 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         int day = calendar.get(Calendar.DAY_OF_MONTH);
 
         addHeaderAndFooterView();
-        String todayHistoryURL = ContentURL.getTodayHistoryURL("1.0", month, day);
-        loadData(todayHistoryURL);
+//        String todayHistoryURL = ContentURL.getTodayHistoryURL("1.0", month, day);
+//        loadData(todayHistoryURL);
         /* 因为ListView添加头布局了，所以position对应集合的位置发生变化，集合第0个数据，position为第1个数据，所以要减掉一个*/
         mainLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(MainActivity.this, HistoryDescActivity.class);
-                HistoryBean.ResultBean resultBean = mDatas.get(position-1);
-                String bean_id = resultBean.get_id();
-                intent.putExtra("hisId",bean_id);
-                startActivity(intent);
+                // 确保点击的是数据项，而不是headerView或footerView
+                int dataPosition = position - mainLv.getHeaderViewsCount();
+                if (dataPosition >= 0 && dataPosition < mDatas.size()) {
+                    Intent intent = new Intent(MainActivity.this, HistoryDescActivity.class);
+                    HistoryBean.ResultBean resultBean = mDatas.get(dataPosition);
+                    String bean_id = resultBean.getE_id();
+                    intent.putExtra("hisId", bean_id);
+                    startActivity(intent);
+                }
             }
         });
 
         presenter = new MainPresenter(this);
         presenter.getHuangLi();
+        presenter.getHuangLiHours();
         presenter.getHistory();
 
     }
 
-    @Override
     public void initViews() {
-        super.initViews();
         mainLv = (ListView) findViewById(R.id.main_lv);
         imgBtn = (ImageButton) findViewById(R.id.main_imgbtn);
         imgBtn.setOnClickListener(this);
@@ -132,7 +128,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 //        根据年月日获取对应的星期
         Calendar calendar = Calendar.getInstance();
         calendar.set(year,month-1,day);
-        String weeks[] = {"星期日","星期一","星期二","星期三","星期四","星期五","星期六"};
+        String[] weeks = {"星期日","星期一","星期二","星期三","星期四","星期五","星期六"};
         int index = calendar.get(Calendar.DAY_OF_WEEK)-1;
         if (index<0){
             index = 0;
@@ -140,83 +136,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         return weeks[index];
     }
 
-    private void loadHeaderData(String laohuangliURL) {
-        /* 获取老黄历接口的数据*/
-
-//        Request request = new Request.Builder().url(laohuangliURL).build()
-        String response = OkpClient.getSync(laohuangliURL);
-//
-        final LaoHuangliBean huangliBean =  new Gson().fromJson(response, LaoHuangliBean.class);
-        final LaoHuangliBean.ResultBean resultBean = huangliBean.getResult();
-        final String[] yangliArr = resultBean.getYangli().split("-");
-        final String week = getWeek(Integer.parseInt(yangliArr[0]), Integer.parseInt(yangliArr[1]), Integer.parseInt(yangliArr[2]));
-        yinliTv.setText("农历 "+resultBean.getYinli()+" (阴历)");
-        yangliTv.setText("公历 "+yangliArr[0]+"年"+yangliArr[1]+"月"+yangliArr[2]+"日 "+week+"(阳历)");
-        dayTv.setText(yangliArr[2]);
-        weekTv.setText(week);
-        baijiTv.setText("彭祖百忌:"+resultBean.getBaiji());
-        wuxingTv.setText("五行:"+resultBean.getWuxing());
-        chongshaTv.setText("冲煞:"+resultBean.getChongsha());
-        jishenTv.setText("吉神宜趋:"+resultBean.getJishen());
-        xiongshenTv.setText("凶神宜忌:"+resultBean.getXiongshen());
-        yiTv.setText("宜:"+resultBean.getYi());
-        jiTv.setText("忌:"+resultBean.getJi());
-//        new OkHttpClient().newCall(request).enqueue(new Callback() {
-//            @Override
-//            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-//
-//            }
-//
-//            @Override
-//            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-//                final LaoHuangliBean huangliBean = new Gson().fromJson(response.body().string(), LaoHuangliBean.class);
-//                final LaoHuangliBean.ResultBean resultBean = huangliBean.getResult();
-//                final String[] yangliArr = resultBean.getYangli().split("-");
-//                final String week = getWeek(Integer.parseInt(yangliArr[0]), Integer.parseInt(yangliArr[1]), Integer.parseInt(yangliArr[2]));
-//
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        yinliTv.setText("农历 "+resultBean.getYinli()+" (阴历)");
-//                        yangliTv.setText("公历 "+yangliArr[0]+"年"+yangliArr[1]+"月"+yangliArr[2]+"日 "+week+"(阳历)");
-//
-//                        dayTv.setText(yangliArr[2]);
-//                        weekTv.setText(week);
-//                        baijiTv.setText("彭祖百忌:"+resultBean.getBaiji());
-//                        wuxingTv.setText("五行:"+resultBean.getWuxing());
-//                        chongshaTv.setText("冲煞:"+resultBean.getChongsha());
-//                        jishenTv.setText("吉神宜趋:"+resultBean.getJishen());
-//                        xiongshenTv.setText("凶神宜忌:"+resultBean.getXiongshen());
-//                        yiTv.setText("宜:"+resultBean.getYi());
-//                        jiTv.setText("忌:"+resultBean.getJi());
-//                    }
-//                });
-//
-//
-//            }
-//        });
-    }
-//    @Override
-//    public void onResponse(Call call, Response response) throws IOException {
-
-//        historyBean = new Gson().fromJson(response.body().string(), HistoryBean.class);
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                mDatas.clear();
-//                List<HistoryBean.ResultBean> list = historyBean.getResult();
-//                for (int i = 0; i < 5; i++) {
-//                    mDatas.add(list.get(i));
-//                }
-//                adapter.notifyDataSetChanged();
-//            }
-//        });
-
-//    }
-//    @Override
-//    public void onSuccess(String result) {
-//
-//    }
 
     @Override
     public void onClick(View v) {
@@ -265,43 +184,83 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
 
     @Override
-    public void getHuangLiSuccess(LaoHuangliBean bean) {
-
-        final LaoHuangliBean.ResultBean resultBean = bean.getResult();
-        final String[] yangliArr = resultBean.getYangli().split("-");
-        final String week = getWeek(Integer.parseInt(yangliArr[0]), Integer.parseInt(yangliArr[1]), Integer.parseInt(yangliArr[2]));
-        yinliTv.setText("农历 "+resultBean.getYinli()+" (阴历)");
-        yangliTv.setText("公历 "+yangliArr[0]+"年"+yangliArr[1]+"月"+yangliArr[2]+"日 "+week+"(阳历)");
-        dayTv.setText(yangliArr[2]);
-        weekTv.setText(week);
-        baijiTv.setText("彭祖百忌:"+resultBean.getBaiji());
-        wuxingTv.setText("五行:"+resultBean.getWuxing());
-        chongshaTv.setText("冲煞:"+resultBean.getChongsha());
-        jishenTv.setText("吉神宜趋:"+resultBean.getJishen());
-        xiongshenTv.setText("凶神宜忌:"+resultBean.getXiongshen());
-        yiTv.setText("宜:"+resultBean.getYi());
-        jiTv.setText("忌:"+resultBean.getJi());
+    public void getHuangLiSuccess(final LaoHuangliBean bean) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final LaoHuangliBean.ResultBean resultBean = bean.getResult();
+                final String[] yangliArr = resultBean.getYangli().split("-");
+                final String week = getWeek(Integer.parseInt(yangliArr[0]), Integer.parseInt(yangliArr[1]), Integer.parseInt(yangliArr[2]));
+                yinliTv.setText("农历 "+resultBean.getYinli()+" (阴历)");
+                yangliTv.setText("公历 "+yangliArr[0]+"年"+yangliArr[1]+"月"+yangliArr[2]+"日 "+week+"(阳历)");
+                dayTv.setText(yangliArr[2]);
+                weekTv.setText(week);
+                baijiTv.setText("彭祖百忌:"+resultBean.getBaiji());
+                wuxingTv.setText("五行:"+resultBean.getWuxing());
+                chongshaTv.setText("冲煞:"+resultBean.getChongsha());
+                jishenTv.setText("吉神宜趋:"+resultBean.getJishen());
+                xiongshenTv.setText("凶神宜忌:"+resultBean.getXiongshen());
+                yiTv.setText("宜:"+resultBean.getYi());
+                jiTv.setText("忌:"+resultBean.getJi());
+            }
+        });
     }
 
     @Override
-    public void getHuangLiError(Throwable throwable) {
-        throwable.printStackTrace();
+    public void getHuangLiError(final Throwable throwable) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                throwable.printStackTrace();
+            }
+        });
     }
 
     @Override
-    public void getHistorySuccess(HistoryBean bean) {
-        historyBean = bean;
-        mDatas.clear();
-        List<HistoryBean.ResultBean> list = historyBean.getResult();
-                for (int i = 0; i < 5; i++) {
+    public void getHistorySuccess(final HistoryBean bean) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                historyBean = bean;
+                mDatas.clear();
+                List<HistoryBean.ResultBean> list = historyBean.getResult();
+                for (int i = 0; i < 5 && i < list.size(); i++) {
                     mDatas.add(list.get(i));
-
                 }
-        adapter.notifyDataSetChanged();
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 
     @Override
-    public void getHistoryError(Throwable throwable) {
-        throwable.printStackTrace();
+    public void getHistoryError(final Throwable throwable) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.e("Exception","HistoryInToday",throwable);
+            }
+        });
+    }
+
+    @Override
+    public void getHuangLiHoursSuccess(final LaoHuangliHoursBean bean) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // 时辰信息获取成功，这里可以根据需要处理时辰数据
+                // 目前UI上没有显示时辰信息的控件，所以暂时只做日志输出
+                Log.d("MainActivity", "时辰信息获取成功，共" + bean.getResult().size() + "个时辰");
+            }
+        });
+    }
+
+    @Override
+    public void getHuangLiHoursError(final Throwable throwable) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.e("Exception", "HuangLiHoursError", throwable);
+            }
+        });
     }
 }

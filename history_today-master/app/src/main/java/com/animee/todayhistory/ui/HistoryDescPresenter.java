@@ -22,8 +22,8 @@ public class HistoryDescPresenter implements HistoryDescContact.Presenter{
         this.view = view;
     }
     @Override
-    public void loadGet(String his){
-        s=model.getHistoryDesc(ContentURL.getHistoryDescURL("1.0", his));
+    public void loadGet(String id){
+        s=model.getHistoryDesc(ContentURL.getHistoryDescURL("1.0", id));
         HistoryDescBean bean = new Gson().fromJson(s,HistoryDescBean.class);
         if(bean != null) view.showResult(bean);
     }

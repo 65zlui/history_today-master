@@ -71,13 +71,13 @@ public class OkpClient {
     public static Response doSyncGet(String url) {
         //创建OkHttpClient对象
         client = getInstance();
+        Log.d("HttpUtil", url+"");
         request = new Request.Builder()
                 .url(url)//请求链接
                 .build();//创建Request对象
         try {
             //获取Response对象
-            Response response = client.newCall(request).execute();
-            return response;
+            return client.newCall(request).execute();
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -106,20 +106,21 @@ public class OkpClient {
      */
     public static String getSync(String url,String... args) {
         final List<String> result=new ArrayList<>();//返回值
-        String address=url;
-        for(int i=0;i<args.length;i++){
-            address=address+"/"+args[i];
+        StringBuilder address= new StringBuilder(url);
+        for (String arg : args) {
+            address.append("/").append(arg);
         }
-        final String finalAddress = address;
+        final String finalAddress = address.toString();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 Response finalResponse = doSyncGet(finalAddress);
                 String res = null;
                 try {
-                    Log.d("同步get请求请求地址：",finalAddress);
-                    if (finalResponse.isSuccessful()) {//请求成功
+                    Log.d("HttpUtil：",finalAddress);
+                    if (finalResponse != null&&finalResponse.isSuccessful()) {//请求成功
                         ResponseBody body = finalResponse.body();//拿到响应体
+                        assert body != null;
                         res = body.string();
                         result.add(res);
                         Log.d("HttpUtil", "同步get请求成功！");
@@ -179,7 +180,7 @@ public class OkpClient {
         });
         /**因为函数返回是立刻执行的，而result要在请求完成之后才能获得
          * 所以需要等待result获得返回值之后再执行return*/
-        while(result.size()==0){
+        while(result.isEmpty()){
             try {
                 TimeUnit.MILLISECONDS.sleep(10);//等待xx毫秒
             } catch (InterruptedException e) {
@@ -217,6 +218,7 @@ public class OkpClient {
                         .build();
                 try{
                     Response response=client.newCall(request).execute();
+                    assert response.body() != null;
                     String res=response.body().string();
                     result.add(res);
                     Log.d("HttpUtil", "同步post请求成功！");
@@ -229,7 +231,7 @@ public class OkpClient {
         }).start();
         /**因为函数返回是立刻执行的，而result要在请求完成之后才能获得
          * 所以需要等待result获得返回值之后再执行return*/
-        while(result.size()==0){
+        while(result.isEmpty()){
             try {
                 TimeUnit.MILLISECONDS.sleep(10);//等待xx毫秒
             } catch (InterruptedException e) {
@@ -256,11 +258,11 @@ public class OkpClient {
      */
     public static String postAsyncRequest(String url,String json,String... args){
         final List<String> result=new ArrayList<>();
-        String address=url;
-        for(int i=0;i<args.length;i++){
-            address=address+"/"+args[i];
+        StringBuilder address= new StringBuilder(url);
+        for (String arg : args) {
+            address.append("/").append(arg);
         }
-        final String finalAddress = address;
+        final String finalAddress = address.toString();
         Log.d("同步post请求地址：",finalAddress);
         client=getInstance();
         FormBody.Builder formBody = new FormBody.Builder();//创建表单请求体
@@ -289,6 +291,7 @@ public class OkpClient {
                     public void run() {
                         String res = null;
                         try {
+                            assert response.body() != null;
                             res = response.body().string();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -302,7 +305,7 @@ public class OkpClient {
         });
         /**因为函数返回是立刻执行的，而result要在请求完成之后才能获得
          * 所以需要等待result获得返回值之后再执行return*/
-        while(result.size()==0){
+        while(result.isEmpty()){
             try {
                 TimeUnit.MILLISECONDS.sleep(10);//等待xx毫秒
             } catch (InterruptedException e) {

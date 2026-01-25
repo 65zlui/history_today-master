@@ -1,13 +1,15 @@
 package com.animee.todayhistory.ui;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.animee.todayhistory.R;
 import com.animee.todayhistory.bean.HistoryBean;
@@ -49,11 +51,14 @@ public class HistoryActivity extends AppCompatActivity implements View.OnClickLi
         historyLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(HistoryActivity.this, HistoryDescActivity.class);
-                HistoryBean.ResultBean resultBean = mDatas.get(position);
-                String bean_id = resultBean.get_id();
-                intent.putExtra("hisId",bean_id);
-                startActivity(intent);
+                // 确保点击的是数据项，避免数组越界
+                if (position >= 0 && position < mDatas.size()) {
+                    Intent intent = new Intent(HistoryActivity.this, HistoryDescActivity.class);
+                    HistoryBean.ResultBean resultBean = mDatas.get(position);
+                    String bean_id = resultBean.getE_id();
+                    intent.putExtra("hisId", bean_id);
+                    startActivity(intent);
+                }
             }
         });
     }
@@ -61,10 +66,8 @@ public class HistoryActivity extends AppCompatActivity implements View.OnClickLi
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.history_iv_back:
-                finish();
-                break;
+        if (v.getId() == R.id.history_iv_back) {
+            finish();
         }
     }
 }
