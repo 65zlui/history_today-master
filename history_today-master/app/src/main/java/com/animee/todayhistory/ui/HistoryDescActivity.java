@@ -37,6 +37,14 @@ public class HistoryDescActivity extends androidx.appcompat.app.AppCompatActivit
         presenter = new HistoryDescPresenter(this);
         presenter.loadGet(id);
     }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (presenter != null) {
+            presenter.onDestroy();
+        }
+    }
 
 
     @Override

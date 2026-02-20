@@ -79,6 +79,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         presenter.getHistory();
 
     }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (presenter != null) {
+            presenter.onDestroy();
+        }
+    }
 
     public void initViews() {
         mainLv = (ListView) findViewById(R.id.main_lv);

@@ -3,114 +3,103 @@ package com.animee.todayhistory;
 import com.animee.todayhistory.bean.HistoryBean;
 import com.animee.todayhistory.bean.LaoHuangliBean;
 import com.animee.todayhistory.bean.LaoHuangliHoursBean;
-import com.animee.todayhistory.network.OkHttpCallBack;
-import com.google.gson.Gson;
-import okhttp3.Response;
+import com.animee.todayhistory.network.ApiService;
+import com.animee.todayhistory.network.RetrofitClient;
 
-import java.io.IOException;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 
-public class MainPresenter implements  MainContract.Presenter{
+public class MainPresenter implements MainContract.Presenter {
     private MainContract.MainView mainView;
     private MainModel mainModel;
-    private Gson gson;
+    private ApiService apiService;
+    private CompositeDisposable compositeDisposable;
     
-    public MainPresenter(MainContract.MainView MV){
+    // API keys
+    private static final String HISTORY_KEY = "c53a9df1c3c9fe91a73bafea02234b18";
+    private static final String LAOHUANGLI_KEY = "530ccafe6316f9854db36e58a3b81c2a";
+    
+    public MainPresenter(MainContract.MainView MV) {
         mainModel = MainModel.getInstance();
         this.mainView = MV;
         mainModel.getTime();
-        gson = new Gson();
+        apiService = RetrofitClient.getApiService();
+        compositeDisposable = new CompositeDisposable();
     }
     
     @Override
-    public void getHuangLi(){
-        mainModel.HuangLi(new OkHttpCallBack() {
-            @Override
-            public void onSuccess(Response response) {
-                try {
-                    String res = response.body().string();
-                    LaoHuangliBean laoHuangliBean = gson.fromJson(res, LaoHuangliBean.class);
-                    if (mainView != null) {
-                        mainView.getHuangLiSuccess(laoHuangliBean);
-                    }
-                } catch (IOException e) {
-                    if (mainView != null) {
-                        mainView.getHuangLiError(e);
-                    }
-                }
-            }
-            
-            @Override
-            public void onFailure(IOException e) {
-                if (mainView != null) {
-                    mainView.getHuangLiError(e);
-                }
-            }
-        });
+    public void getHuangLi() {
+        String date = mainModel.getLaohuangliDate();
+        Disposable disposable = apiService.getLaoHuangli(date, LAOHUANGLI_KEY)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        laoHuangliBean -> {
+                            if (mainView != null) {
+                                mainView.getHuangLiSuccess(laoHuangliBean);
+                            }
+                        },
+                        throwable -> {
+                            if (mainView != null) {
+                                mainView.getHuangLiError(throwable);
+                            }
+                        }
+                );
+        compositeDisposable.add(disposable);
     }
 
     @Override
-    public void getHuangLiHours(){
-        mainModel.HuangLiHours(new OkHttpCallBack() {
-            @Override
-            public void onSuccess(Response response) {
-                try {
-                    String res = response.body().string();
-                    LaoHuangliHoursBean laoHuangliHoursBean = gson.fromJson(res, LaoHuangliHoursBean.class);
-                    if (mainView != null) {
-                        mainView.getHuangLiHoursSuccess(laoHuangliHoursBean);
-                    }
-                } catch (IOException e) {
-                    if (mainView != null) {
-                        mainView.getHuangLiHoursError(e);
-                    }
-                }
-            }
-            
-            @Override
-            public void onFailure(IOException e) {
-                if (mainView != null) {
-                    mainView.getHuangLiHoursError(e);
-                }
-            }
-        });
+    public void getHuangLiHours() {
+        String date = mainModel.getLaohuangliDate();
+        Disposable disposable = apiService.getLaoHuangliHours(date, LAOHUANGLI_KEY)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        laoHuangliHoursBean -> {
+                            if (mainView != null) {
+                                mainView.getHuangLiHoursSuccess(laoHuangliHoursBean);
+                            }
+                        },
+                        throwable -> {
+                            if (mainView != null) {
+                                mainView.getHuangLiHoursError(throwable);
+                            }
+                        }
+                );
+        compositeDisposable.add(disposable);
     }
 
     @Override
     public void getHistory() {
-        mainModel.HisTory(new OkHttpCallBack() {
-            @Override
-            public void onSuccess(Response response) {
-                try {
-                    String res = response.body().string();
-                    HistoryBean historyBean = gson.fromJson(res, HistoryBean.class);
-                    if (mainView != null) {
-                        mainView.getHistorySuccess(historyBean);
-                    }
-                } catch (IOException e) {
-                    if (mainView != null) {
-                        mainView.getHistoryError(e);
-                    }
-                }
-            }
-            
-            @Override
-            public void onFailure(IOException e) {
-                if (mainView != null) {
-                    mainView.getHistoryError(e);
-                }
-            }
-        });
+        String date = mainModel.getHistoryDate();
+        Disposable disposable = apiService.getTodayHistory(date, HISTORY_KEY)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        historyBean -> {
+                            if (mainView != null) {
+                                mainView.getHistorySuccess(historyBean);
+                            }
+                        },
+                        throwable -> {
+                            if (mainView != null) {
+                                mainView.getHistoryError(throwable);
+                            }
+                        }
+                );
+        compositeDisposable.add(disposable);
     }
     
     @Override
-    public void UpdateTime(int year, int month, int dayOfMonth){
+    public void UpdateTime(int year, int month, int dayOfMonth) {
         mainModel.UpdateTime(year, month, dayOfMonth);
     }
 
-    public void getMainPresenter(){
+    public void getMainPresenter() {
     }
     
     public void onDestroy() {
+        if (compositeDisposable != null && !compositeDisposable.isDisposed()) {
+            compositeDisposable.dispose();
+        }
         mainView = null;
     }
 
