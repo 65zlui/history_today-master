@@ -33,7 +33,7 @@ public class HistoryDescActivity extends androidx.appcompat.app.AppCompatActivit
         backIv.setOnClickListener(this);
         shareIv.setOnClickListener(this);
 
-        id = getIntent().getStringExtra("id");
+        id = getIntent().getStringExtra("hisId");
         presenter = new HistoryDescPresenter(this);
         presenter.loadGet(id);
     }
@@ -59,21 +59,33 @@ public class HistoryDescActivity extends androidx.appcompat.app.AppCompatActivit
 
     @Override
     public void showResult(HistoryDescBean bean) {
-        resultBean = bean.getResult().get(0);
+        if (bean.getResult() != null && !bean.getResult().isEmpty()) {
+            resultBean = bean.getResult().get(0);
 
-        final HistoryDescActivity historyDescActivity = this;
+            final HistoryDescActivity historyDescActivity = this;
 
-        Log.d(TAG, String.valueOf(resultBean));
-        String picUrl = resultBean.getPic();
-        titleTv.setText(resultBean.getTitle());
-        contentTv.setText(resultBean.getContent());
-        if (TextUtils.isEmpty(picUrl)) {
+            Log.d(TAG, String.valueOf(resultBean));
+            titleTv.setText(resultBean.getTitle());
+            contentTv.setText(resultBean.getContent());
+            
+            // Handle pictures - new structure has picUrl list
+            if (resultBean.getPicUrl() != null && !resultBean.getPicUrl().isEmpty()) {
+                String firstPicUrl = resultBean.getPicUrl().get(0).getUrl();
+                if (!TextUtils.isEmpty(firstPicUrl)) {
+                    picIv.setVisibility(View.VISIBLE);
+                    Picasso.get().load(firstPicUrl).into(picIv);
+                } else {
+                    picIv.setVisibility(View.GONE);
+                }
+            } else {
+                picIv.setVisibility(View.GONE);
+            }
+        } else {
+            // Handle empty result case
+            titleTv.setText("暂无数据");
+            contentTv.setText("未找到相关历史事件详情");
             picIv.setVisibility(View.GONE);
-        }else {
-            picIv.setVisibility(View.VISIBLE);
-            Picasso.get().load(picUrl).into(picIv);
         }
-
 
     }
 

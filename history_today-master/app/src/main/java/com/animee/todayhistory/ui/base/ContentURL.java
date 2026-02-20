@@ -22,7 +22,7 @@ public class ContentURL {
     }
 
 //    根据指定事件id获取指定事件详情信息
-    public static String getHistoryDescURL(String version,String id){
-        return "http://api.juheapi.com/japi/tohdet?key=c53a9df1c3c9fe91a73bafea02234b18&v="+version+"&id="+id;
+    public static String getHistoryDescURL(String id){
+        return "http://v.juhe.cn/todayOnhistory/queryDetail?key=c53a9df1c3c9fe91a73bafea02234b18&e_id="+id;
     }
 }
