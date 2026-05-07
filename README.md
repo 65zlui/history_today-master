@@ -39,7 +39,7 @@ Complete development from requirements analysis to testing.
 
 ### 3. Structured Design
 - Encapsulated BaseActivity base class to extract common methods and operations
-- Initially used for network callbacks in MVC mode
+- Initially used for network callbacks in MVP mode
 - Removed network request methods from BaseActivity after network module encapsulation
 - Uses Adapter pattern for ListView data binding
 - Uses Singleton pattern for Model classes like HistoryDescModel

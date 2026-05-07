@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace "com.animee.todayhistory"
@@ -17,6 +18,9 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 }
 
@@ -41,7 +45,8 @@ dependencies {
     
     // OkHttp logging interceptor
     implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
-    
+    implementation 'androidx.core:core-ktx:1.10.1'
+
     // JUnit-related dependencies
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.5.2'
